@@ -17,15 +17,7 @@ git clone https://bitbucket.org/ninestack/wp-qa-agent.git
 cd wp-qa-agent
 ```
 
-**Windows:** Double-click `setup.bat` — it handles everything interactively.
-
-**Manual setup:**
-```bash
-npm install
-npx playwright install chromium
-npx tsc
-cp .env.example .env
-```
+Double-click `setup.bat` — it handles everything interactively (installs dependencies, Playwright browser, builds the project, and walks you through configuration).
 
 ### 2. Run a QA audit
 
