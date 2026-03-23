@@ -1,0 +1,31 @@
+{
+  "name": "wp-qa-agent",
+  "version": "1.0.0",
+  "description": "WordPress/WooCommerce QA Agent — dual-layer testing",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "qa-agent": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "qa": "tsx src/cli.ts run"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^13.0.0",
+    "dotenv": "^16.4.0",
+    "js-yaml": "^4.1.0",
+    "marked": "^17.0.4",
+    "playwright": "^1.58.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/marked": "^5.0.2",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

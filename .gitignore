@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.env
+qa-reports/
+screenshots/
+*.log
+configs/*.yml
+!configs/example-site.yml
+
+# Claude Code local settings (may contain credentials)
+.claude/settings.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
