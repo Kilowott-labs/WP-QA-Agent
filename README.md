@@ -33,22 +33,11 @@ claude
 npx qa-agent run --url https://staging.your-site.com
 ```
 
-**With WordPress credentials (unlocks plugin checks + WooCommerce health):**
-```bash
-npx qa-agent run --url https://staging.your-site.com \
-  --username qa-user --password your-app-password
-```
+That's it. Credentials, project path, and all settings are **auto-loaded** from
+the matching config file in `configs/` (created during setup). No need to pass
+`--config`, `--username`, `--password`, or `--project` every time.
 
-**With local project code (enables code analysis + code review):**
-```bash
-npx qa-agent run --url https://staging.your-site.com \
-  --project /path/to/your/wordpress/theme
-```
-
-**With a site config file:**
-```bash
-npx qa-agent run --config configs/my-site.yml
-```
+If no matching config exists, it runs with just the URL (Mode B — URL only).
 
 ### 3. Reports
 

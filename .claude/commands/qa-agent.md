@@ -8,21 +8,32 @@ testing, and produces a final merged report — all autonomously.
 
 ```
 /qa-agent <url>
-/qa-agent <url> --username <user> --password <app-password>
-/qa-agent --config configs/my-site.yml
-/qa-agent <url> --project /path/to/local/wordpress
+/qa-agent <url> --skip-browser
+/qa-agent <url> --skip-lighthouse
 ```
+
+That's it. Just the URL. Credentials, project path, and all other settings
+are auto-loaded from the matching config file in `configs/`.
+
+## How auto-detection works
+
+When you provide a URL, the CLI automatically searches `configs/*.yml` for a
+config file whose `url` field matches. If found, it uses that config — which
+includes credentials, project path, custom features, critical flows, and all
+other settings. No need to pass `--config`, `--username`, `--password`, or
+`--project` every time.
+
+If no matching config is found, it runs with just the URL (Mode B).
 
 ## Arguments
 
 The argument `$ARGUMENTS` contains whatever the user typed after `/qa-agent`.
 Parse it to extract:
-- A URL (required unless --config is used)
-- Optional `--username` and `--password` for WordPress REST API access
-- Optional `--config` path to a YAML config file
-- Optional `--project` path to a local WordPress project for code review
+- A URL (required)
 - Optional `--skip-browser` to skip browser tests (faster, API-only)
 - Optional `--skip-lighthouse` to skip Lighthouse performance audit
+- Optional `--config` to explicitly specify a config file (overrides auto-detection)
+- Optional `--username`, `--password`, `--project` to override config values
 
 ---
 

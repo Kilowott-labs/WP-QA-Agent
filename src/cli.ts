@@ -15,6 +15,7 @@ import { logger, writeJson, readJson } from './utils.js';
 import { FixableIssue } from './types.js';
 import path from 'path';
 import fs from 'fs/promises';
+import yaml from 'js-yaml';
 
 const program = new Command();
 
@@ -371,10 +372,52 @@ program
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+/**
+ * Auto-detect a config file in configs/ that matches the given URL.
+ * Checks all .yml/.yaml files and matches by url field.
+ */
+async function findConfigByUrl(url: string): Promise<string | null> {
+  const configDir = path.join(process.cwd(), 'configs');
+  try {
+    const entries = await fs.readdir(configDir);
+    const yamlFiles = entries.filter(f => f.endsWith('.yml') || f.endsWith('.yaml'));
+
+    for (const file of yamlFiles) {
+      if (file === 'example-site.yml') continue;
+      const filePath = path.join(configDir, file);
+      try {
+        const raw = await fs.readFile(filePath, 'utf-8');
+        const parsed = yaml.load(raw) as any;
+        if (parsed?.url) {
+          // Match by URL (normalize trailing slashes)
+          const configUrl = parsed.url.replace(/\/+$/, '');
+          const inputUrl = url.replace(/\/+$/, '');
+          if (configUrl === inputUrl) {
+            return filePath;
+          }
+        }
+      } catch { /* skip unreadable config files */ }
+    }
+  } catch { /* configs/ dir doesn't exist */ }
+  return null;
+}
+
 async function resolveConfig(options: any) {
   if (options.config) {
     return loadConfig(options.config);
   } else if (options.url) {
+    // Auto-detect: check if a config file exists for this URL
+    const matchedConfig = await findConfigByUrl(options.url);
+    if (matchedConfig) {
+      logger.info(`Auto-detected config: ${matchedConfig}`);
+      const config = await loadConfig(matchedConfig);
+      // CLI flags override config values (so you can still override per-run)
+      if (options.username) config.username = options.username;
+      if (options.password) config.app_password = options.password;
+      if (options.project) config.project_path = options.project;
+      return config;
+    }
+    // No config found — build from CLI flags
     return configFromCLI({
       url: options.url,
       username: options.username,
