@@ -217,16 +217,8 @@ Currently tests desktop (1280) and mobile (375). Add:
 ### ~~20. Image Optimization Audit~~ ✅ IMPLEMENTED
 *Implemented in `src/layer1/checks/image-audit.ts` — oversized image detection (>500KB + natural vs display size comparison), WebP/AVIF format support, lazy loading audit (below-fold images), missing width/height attributes, srcset responsive image check, optimization plugin detection (Imagify, Smush, ShortPixel, EWWW, etc.), total image weight per page.*
 
-### 21. Form Validation Testing
-**Priority:** Low | **Effort:** Medium
-
-- [ ] Contact form submission (if detected — Gravity Forms, WPForms, CF7)
-- [ ] Newsletter signup form (Mailchimp, Klaviyo, etc.)
-- [ ] Search form with empty query
-- [ ] Login form validation messages (wrong password, empty fields)
-- [ ] Registration form field validation
-- [ ] Required field indicators visible
-- [ ] Error messages are clear and specific
+### ~~21. Form Validation Testing~~ ✅ IMPLEMENTED + EXTENDED TO FORM QUALITY AUDIT
+*Implemented in `src/layer1/checks/form-audit.ts` — placeholder quality audit (label-as-placeholder detection, missing placeholders, Kilowott placeholder map with Norwegian support), WCAG AA contrast ratio computation for placeholder colours, required field indicator detection (* markers, wrapper elements), CRO routing analysis (generic /contact routing without attribution, booking CTA link analysis), mobile CTA button wrapping detection (375px viewport resize), focus colour branding check. Layer 2 extension: 9-step Form Quality Assessment protocol in `src/layer2/instructions.md` covering visual scan, placeholder audit, contrast, required indicators, CTA destination checking, mobile UX, trust signals, and Forms CRO Score out of 10. Kilowott Form Standard baked into `CLAUDE.md` for agent context on every run. Layer 2 trigger fires as `form-quality` investigation (HIGH priority for CRO issues).*
 
 ### 22. Cron & Background Task Health
 **Priority:** Low | **Effort:** Low
@@ -322,7 +314,7 @@ Currently tests desktop (1280) and mobile (375). Add:
 | 22 | Cron & Task Health | Low | Low | 21st |
 | 2 | Email Verification | High | Medium | 22nd |
 | 5 | Multi-Language Testing | High | High | 23rd |
-| 21 | Form Validation Testing | Low | Medium | 24th |
+| ~~21~~ | ~~Form Validation Testing~~ → Form Quality + CRO Audit | ~~Low~~ → **High** | ~~Medium~~ → **Low** | ✅ Done |
 | 14 | Cross-Browser Comparison | Medium | Medium | 25th |
 | 26 | Test Suite | Medium | High | 26th |
 | 27 | Dashboard / Web UI | Low | High | 27th |

@@ -1652,3 +1652,96 @@ qa-reports/
    adapting to the actual UI it encounters. DevTools MCP runs in the
    background throughout — it doesn't need step-by-step instructions,
    just start it before the flow and query it after.
+
+---
+
+## Kilowott Form Standard
+
+When auditing any website, Claude applies this standard to every form encountered.
+This is the internal benchmark against which all form quality is measured.
+
+### Placeholder Copy Rules
+
+Placeholders must be **example values** — never the field label repeated.
+
+| Field | Correct placeholder | Wrong |
+|-------|---------------------|-------|
+| Name / Full name | `e.g. John Smith` | `Name` or `Full Name` |
+| First name | `e.g. John` | `First Name` |
+| Email | `e.g. hello@company.com` | `Email` or `Email Address` |
+| Phone | `e.g. +47 900 00 000` | `Phone Number` |
+| Company | `e.g. Acme AS` | `Company Name` |
+| Message / Inquiry | `Tell us about your project...` | `Message` |
+| Subject | `e.g. Booking inquiry for June` | `Subject` |
+
+**Rule:** If you could replace the placeholder with the field label and nothing would change — it's wrong.
+
+### Required Fields
+
+- All required fields must have a visible `*` marker on the label
+- A note must appear near the top of the form: *"Fields marked * are required"*
+- Never rely on HTML5 validation alone — add visible indicators
+- `aria-required="true"` must also be set on required inputs
+
+### Visual Standards
+
+| Property | Standard |
+|----------|----------|
+| Placeholder colour | Minimum #767676 on white backgrounds (WCAG AA 4.5:1) |
+| Focus state | Brand primary colour border, 2px solid |
+| Error state | Red (#D32F2F or brand equivalent) with inline message below field |
+| Success state | Green confirmation, clearly visible |
+| Field labels | Always visible above the field — never disappear on focus |
+| Mobile buttons | CTA text must never wrap to a second line at 375px viewport |
+
+### CRO / Conversion Standards
+
+These are **high severity** issues — they directly hurt client revenue:
+
+1. **Generic contact routing:** If all "Book Now" / "Get in Touch" / "Enquire" CTAs
+   point to a single `/contact` page with no query parameters or source tracking,
+   flag this as HIGH severity CRO risk. The client cannot measure which pages
+   drive conversions.
+
+2. **Source attribution:** Every CTA link to a contact page should include
+   `?source=page-name` at minimum. Ideally, each activity/product page has its
+   own embedded short form (not a redirect).
+
+3. **Context around forms:** A form should never appear alone without:
+   - A clear headline ("Book your experience", "Get a free quote")
+   - Brief trust signals (response time, "no obligation", reviews count)
+   - Visible contact alternatives (phone, email) if appropriate
+
+4. **Pre-population:** For booking flows, the form should know what the user
+   came to book. A hidden `interest` field pre-filled with the page's activity
+   name is the minimum viable solution.
+
+### Severity Levels for Form Issues
+
+| Issue | Severity |
+|-------|----------|
+| Pre-checked GDPR consent checkbox | HIGH (legal risk) |
+| All CTAs route to generic page, no attribution | HIGH |
+| Placeholder contrast fails WCAG AA | HIGH (if < 3:1) / MEDIUM (3-4.5:1) |
+| No validation error feedback on empty submit | MEDIUM |
+| Placeholder = field label (lazy copy-paste) | MEDIUM |
+| Required indicators missing | MEDIUM |
+| CTA button wraps on mobile | MEDIUM |
+| Mixed Norwegian/English in form labels | MEDIUM |
+| Wrong date format for locale (mm/dd on NO site) | MEDIUM |
+| Consent checkbox label has no link to policy | MEDIUM |
+| Missing placeholder | LOW |
+| Default browser focus colour (unbranded) | LOW |
+| No trust signals around form | LOW |
+| Missing autocomplete attribute on common fields | LOW |
+| Dropdown with empty/generic default option | LOW |
+
+### What to Flag in Every Report
+
+When generating the final QA report, include a **"Forms Quality"** section that:
+
+1. Lists each form by page URL and purpose
+2. Rates each form: Passes standard / Needs improvement / Fails standard
+3. Provides the **exact fix** for each issue (not general advice — specific text, values, code)
+4. Flags CRO issues at the TOP of the section with business impact context
+5. Gives a **Forms CRO Score** out of 10 with reasoning

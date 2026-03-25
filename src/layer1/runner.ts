@@ -25,6 +25,7 @@ import { checkWPCoreHealth } from './checks/wp-core-health.js';
 import { runImageAudit } from './checks/image-audit.js';
 import { analyseErrorLogs } from './checks/error-logs.js';
 import { runCodeReview } from './checks/code-review.js';
+import { runFormAudit, buildFormAuditL2Trigger } from './checks/form-audit.js';
 
 /**
  * Run all Layer 1 checks and produce structured results + Layer 2 queue.
@@ -162,6 +163,7 @@ export async function runLayer1(
   let accessibility: import('../types.js').AccessibilityResult | undefined;
   let performanceDeepDive: import('../types.js').PerformanceDeepDiveResult | undefined;
   let imageAudit: import('../types.js').ImageAuditResult | undefined;
+  let formAudit: import('./checks/form-audit.js').FormAuditResult | undefined;
 
   if (!options.skipBrowser) {
     logger.section('Browser-based Checks');
@@ -249,6 +251,12 @@ export async function runLayer1(
         status: imageAudit.oversized_images.length === 0 && imageAudit.missing_dimensions.length === 0 ? 'PASS' : 'WARN',
         detail: `${imageAudit.oversized_images.length} oversized, ${imageAudit.missing_dimensions.length} missing dimensions, ${imageAudit.lazy_loading.without_lazy_loading} without lazy loading`,
       });
+
+      // Form Audit
+      logger.info('Running form audit...');
+      formAudit = await runFormAudit(session.page, config);
+      logger.info(`Forms: ${formAudit.summary.totalForms} audited, ${formAudit.summary.totalIssues} issues found`);
+      checks.push(...formAudit.checkResults);
     } finally {
       await session.close();
     }
@@ -273,7 +281,8 @@ export async function runLayer1(
     security,
     wpCoreHealth,
     errorLogs,
-    codeReview
+    codeReview,
+    formAudit
   );
 
   logger.section('Layer 2 Queue');
@@ -301,6 +310,7 @@ export async function runLayer1(
     image_audit: imageAudit,
     error_logs: errorLogs,
     code_review: codeReview,
+    form_audit: formAudit,
     layer2_queue: layer2Queue,
     screenshots,
     checks,
@@ -343,7 +353,8 @@ function buildLayer2Queue(
   security: import('../types.js').SecurityResult | undefined,
   wpCoreHealth: import('../types.js').WPCoreHealthResult | undefined,
   errorLogs: import('../types.js').ErrorLogResult | undefined,
-  codeReview: CodeReviewResult | undefined
+  codeReview: CodeReviewResult | undefined,
+  formAudit: import('./checks/form-audit.js').FormAuditResult | undefined
 ): Layer2Investigation[] {
   const queue: Layer2Investigation[] = [];
 
@@ -896,6 +907,23 @@ function buildLayer2Queue(
       context: { keys: [...new Set(sensitiveStorage)] },
       pages: ['/'],
     });
+  }
+
+  // Form audit → form-quality investigation
+  if (formAudit) {
+    const formL2 = buildFormAuditL2Trigger(formAudit);
+    if (formL2) {
+      queue.push({
+        id: formL2.id,
+        category: 'ux',
+        priority: formL2.priority,
+        trigger: formL2.description,
+        instruction:
+          'Visually assess every form on the site. Check placeholder quality, CTA routing, mobile UX, trust signals, and conversion context. Follow the Form Quality Assessment protocol in Layer 2 instructions. Produce a Forms CRO Score out of 10.',
+        context: formL2.data,
+        pages: formL2.data.affectedPages || ['/'],
+      });
+    }
   }
 
   return queue;

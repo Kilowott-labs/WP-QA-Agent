@@ -587,6 +587,7 @@ export interface Layer1Results {
   image_audit?: ImageAuditResult;
   error_logs?: ErrorLogResult;
   code_review?: CodeReviewResult;
+  form_audit?: import('./layer1/checks/form-audit.js').FormAuditResult;
 
   layer2_queue: Layer2Investigation[];
   screenshots: string[];

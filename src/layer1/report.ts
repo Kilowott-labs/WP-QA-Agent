@@ -3,6 +3,7 @@ import path from 'path';
 import { Layer1Results } from '../types.js';
 import { fmtMs } from '../utils.js';
 import { markdownToPdf } from '../pdf.js';
+import { buildFormAuditReport } from './checks/form-audit.js';
 
 function fmtBytes(bytes: number): string {
   if (bytes === 0) return '0B';
@@ -744,6 +745,11 @@ export async function generateLayer1Report(
       }
       w('');
     }
+  }
+
+  // ── Form Audit ──────────────────────────────────────────────────────
+  if (results.form_audit) {
+    w(buildFormAuditReport(results.form_audit));
   }
 
   // ── Layer 2 Queue ────────────────────────────────────────────────────

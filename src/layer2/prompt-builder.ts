@@ -307,6 +307,26 @@ export async function buildLayer2Prompt(
     }
   }
 
+  // Form audit context for Layer 2
+  if (results.form_audit && results.form_audit.summary.totalIssues > 0) {
+    const fa = results.form_audit;
+    w('## Form Audit Summary (Layer 1)');
+    w('');
+    w(`Forms audited: ${fa.summary.totalForms} across ${fa.summary.pagesWithForms} pages. ${fa.summary.totalIssues} issues found.`);
+    if (fa.summary.croRiskPages.length > 0) {
+      w(`**CRO Risk:** ${fa.summary.croRiskPages.length} pages route CTAs to generic /contact with no attribution.`);
+      w(`Pages: ${fa.summary.croRiskPages.join(', ')}`);
+    }
+    w('');
+    w('Issues by type:');
+    for (const [code, count] of Object.entries(fa.summary.byCode)) {
+      w(`- ${code}: ${count}`);
+    }
+    w('');
+    w('**Layer 2 action:** Visually assess each form, test mobile UX, check CTA destinations, and produce a Forms CRO Score out of 10.');
+    w('');
+  }
+
   // The investigation queue
   w('# Investigation Queue');
   w('');

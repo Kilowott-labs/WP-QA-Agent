@@ -75,6 +75,7 @@ qa-reports/my-site-2026-03-23/
 | **Performance** | Page weight, render-blocking resources, third-party scripts, caching, compression |
 | **WP Core Health** | WP/PHP version status, debug mode, SSL, HTTPS redirect, object cache, cron |
 | **Image Audit** | Oversized images, missing dimensions, lazy loading, WebP/AVIF support |
+| **Form Audit** | Placeholder quality, contrast, required indicators, CRO routing, GDPR consent, validation feedback, mobile CTA wrapping, autocomplete, language consistency |
 | **Error Logs** | Fetches debug.log/error_log, groups errors by severity |
 
 ### Layer 2 — AI-Powered Browser Testing (runs via Claude Code)
@@ -85,6 +86,7 @@ Claude reads your project code to understand custom features, then opens a real 
 - Custom features detected from code (size guides, custom fields, payment integrations)
 - Visual assessment (broken images, overlapping text, placeholder content)
 - Mobile responsiveness (375x812 viewport)
+- Form quality & CRO assessment (Kilowott Form Standard — visual scan, placeholder audit, CTA destination checking, GDPR consent, trust signals, Forms CRO Score out of 10)
 - Form validation and AJAX interactions
 - Error impact assessment (do console errors actually affect users?)
 
@@ -201,7 +203,7 @@ wp-qa-agent/
 │   ├── layer1/
 │   │   ├── runner.ts           # Layer 1 orchestrator
 │   │   ├── report.ts           # Report generator
-│   │   └── checks/             # 13 check modules
+│   │   └── checks/             # 14 check modules
 │   ├── layer2/
 │   │   ├── instructions.md     # Layer 2 testing instructions
 │   │   ├── prompt-builder.ts   # Generates Layer 2 prompt
