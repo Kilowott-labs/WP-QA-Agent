@@ -32,72 +32,66 @@ Parse it to extract:
 - A URL (required)
 - Optional `--skip-browser` to skip browser tests (faster, API-only)
 - Optional `--skip-lighthouse` to skip Lighthouse performance audit
-- Optional `--config` to explicitly specify a config file (overrides auto-detection)
-- Optional `--username`, `--password`, `--project` to override config values
+- Optional extra flags to pass through to the CLI
 
 ---
 
 ## Execution Steps
 
-### Step 0 — Codebase Deep-Dive (CRITICAL — do this FIRST)
+### Step 0 — Check for config file and read project code
 
-**This step is MANDATORY when `--project` is provided or when a `project_path`
-is set in the config YAML. Do NOT skip this step. It is the foundation for
-intelligent testing.**
+**BEFORE running anything, check if a config file exists for this URL:**
 
-Before running ANY automated checks, you must explore and understand the
-WordPress project codebase yourself. The automated code-analysis scanner
-catches patterns via regex, but YOUR reading catches intent, business logic,
-and edge cases that patterns miss.
+```bash
+ls configs/*.yml
+```
 
-**What to do:**
+Read each config file and check if its `url` field matches the URL the user
+provided. If a matching config exists:
+- Note the `project_path` value (if set — this enables code analysis)
+- Note the credentials (`username`, `app_password`)
+- Note `custom_features`, `critical_flows`, `known_issues` if listed
 
-1. **Read the theme's `functions.php`** — this is the entry point. Understand:
-   - What hooks and filters are registered
-   - What custom post types, taxonomies, shortcodes exist
-   - What third-party integrations are set up (payment gateways, APIs, CRMs)
-   - What admin customizations are made
+**If `project_path` is set in the config, do a codebase deep-dive NOW
+(before running Layer 1). Do NOT skip this.** The automated code-analysis
+scanner catches patterns via regex, but YOUR reading catches intent,
+business logic, and edge cases that patterns miss.
 
-2. **Read WooCommerce customizations** — if `woocommerce/` directory exists in the theme:
-   - Which templates are overridden and WHY (read the actual template code)
-   - Custom checkout fields, cart modifications, product display changes
-   - Payment gateway integrations and custom order workflows
+**What to read:**
 
-3. **Read custom plugin files** — if the project has custom plugins:
-   - What each plugin does (read the main plugin file header + key functions)
-   - REST API endpoints registered
-   - AJAX handlers and what they power
+1. **`functions.php`** — hooks, filters, custom post types, shortcodes,
+   third-party integrations
+2. **`woocommerce/` directory** (if exists) — template overrides, custom
+   checkout fields, cart modifications, payment gateway integrations
+3. **Custom plugin files** — REST endpoints, AJAX handlers
+4. **JavaScript files** (non-minified) — interactive features, AJAX calls
+5. **`style.css` or `theme.json`** — design system
+6. **`composer.json`, `package.json`** — dependencies
 
-4. **Read JavaScript files** — non-minified `.js` files in the theme:
-   - What interactive features exist (sliders, filters, live search, maps)
-   - What AJAX/fetch calls are made and to which endpoints
-   - Payment gateway frontend integrations
+**Build a mental checklist** of every custom feature, WooCommerce
+modification, third-party integration, and custom form. Keep this in mind
+for all subsequent steps.
 
-5. **Read `style.css` or `theme.json`** — understand the design system
-
-6. **Check for `.env.example`, `composer.json`, `package.json`** — understand dependencies
-
-**Output of this step:** Build a mental checklist of:
-- Every custom feature that needs testing
-- Every WooCommerce modification that could break checkout
-- Every third-party integration that could fail
-- Every custom form or interactive element
-- Business-critical flows specific to THIS site
-
-**Keep this checklist in mind for ALL subsequent steps.** When Layer 2
-investigations reference "code-driven" items, your deep understanding
-of the code should inform HOW you test — not just WHAT you test.
+If no config file matches OR no `project_path` is set, skip the codebase
+reading and proceed to Step 1 in URL-only mode.
 
 ---
 
 ### Step 1 — Run Layer 1 (automated checks)
 
-Run the CLI command to execute all Layer 1 checks. Include `--project` if
-a project path was provided:
+Run the CLI to execute all Layer 1 checks. **Always pass `--url` only.**
+The CLI auto-detects the matching config file and loads credentials,
+project path, and all other settings automatically. Do NOT manually pass
+`--config`, `--username`, `--password`, or `--project` unless the user
+explicitly provided them as overrides.
 
 ```bash
-npx qa-agent run <parsed arguments here>
+npx qa-agent run --url "<the-url>" [--skip-browser] [--skip-lighthouse]
 ```
+
+The CLI will print `Auto-detected config: configs/xxx.yml` if it found a
+matching config. If you see this, the project path, credentials, and all
+settings are loaded — code analysis will run automatically.
 
 This produces:
 - `qa-reports/<site>-<date>/layer1-results.json` — raw data
