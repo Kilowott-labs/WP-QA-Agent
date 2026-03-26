@@ -4,6 +4,10 @@ import { Layer1Results, Issue } from '../types.js';
 import { readJson, fmtMs, logger } from '../utils.js';
 import { markdownToPdf } from '../pdf.js';
 import { buildFormAuditReport } from '../layer1/checks/form-audit.js';
+import { buildSeoHealthReport } from '../layer1/checks/seo-health.js';
+import { buildResponsiveReport } from '../layer1/checks/responsive-breakpoints.js';
+import { buildShippingTaxReport } from '../layer1/checks/shipping-tax.js';
+import { buildMultiLanguageReport } from '../layer1/checks/multi-language.js';
 
 interface Layer2Findings {
   tested_at: string;
@@ -207,6 +211,26 @@ export async function mergeReports(reportDir: string): Promise<string> {
   // ── Form Audit (from L1) ────────────────────────────────────────────
   if (l1.form_audit && l1.form_audit.summary.totalIssues > 0) {
     w(buildFormAuditReport(l1.form_audit));
+  }
+
+  // ── SEO Health (from L1) ───────────────────────────────────────────
+  if (l1.seo_health && l1.seo_health.total_issues > 0) {
+    w(buildSeoHealthReport(l1.seo_health));
+  }
+
+  // ── Responsive (from L1) ───────────────────────────────────────────
+  if (l1.responsive && l1.responsive.total_issues > 0) {
+    w(buildResponsiveReport(l1.responsive));
+  }
+
+  // ── Shipping & Tax (from L1) ───────────────────────────────────────
+  if (l1.shipping_tax && l1.shipping_tax.api_accessible) {
+    w(buildShippingTaxReport(l1.shipping_tax));
+  }
+
+  // ── Multi-Language (from L1) ───────────────────────────────────────
+  if (l1.multi_language && l1.multi_language.is_multilingual) {
+    w(buildMultiLanguageReport(l1.multi_language));
   }
 
   // ── Passed Checks ───────────────────────────────────────────────────

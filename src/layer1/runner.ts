@@ -26,6 +26,10 @@ import { runImageAudit } from './checks/image-audit.js';
 import { analyseErrorLogs } from './checks/error-logs.js';
 import { runCodeReview } from './checks/code-review.js';
 import { runFormAudit, buildFormAuditL2Trigger } from './checks/form-audit.js';
+import { runSeoHealthCheck, buildSeoL2Trigger } from './checks/seo-health.js';
+import { runResponsiveCheck, buildResponsiveL2Trigger } from './checks/responsive-breakpoints.js';
+import { checkShippingTax, buildShippingTaxL2Trigger } from './checks/shipping-tax.js';
+import { runMultiLanguageCheck, buildMultiLanguageL2Trigger } from './checks/multi-language.js';
 
 /**
  * Run all Layer 1 checks and produce structured results + Layer 2 queue.
@@ -156,6 +160,19 @@ export async function runLayer1(
       : `No entries found (${errorLogs.sources_checked.length} sources checked)`,
   });
 
+  // ── Step 6b: Shipping & Tax (WooCommerce REST API, no browser) ──────
+  let shippingTax: import('./checks/shipping-tax.js').ShippingTaxResult | undefined;
+  if (wpHealth.woocommerce_detected && config.username && config.app_password) {
+    logger.section('Shipping & Tax Validation');
+    shippingTax = await checkShippingTax(config, wpHealth.woocommerce_detected);
+    if (shippingTax.api_accessible) {
+      logger.info(`Shipping zones: ${shippingTax.shipping_zones.length}, Issues: ${shippingTax.total_issues}`);
+    } else {
+      logger.warn('WC shipping/tax API not accessible');
+    }
+    checks.push(...shippingTax.checkResults);
+  }
+
   // ── Step 7-9: Browser-based checks ────────────────────────────────────
   let pageHealth: import('../types.js').PageHealthResult[] = [];
   let brokenLinks: import('../types.js').BrokenLink[] = [];
@@ -164,6 +181,9 @@ export async function runLayer1(
   let performanceDeepDive: import('../types.js').PerformanceDeepDiveResult | undefined;
   let imageAudit: import('../types.js').ImageAuditResult | undefined;
   let formAudit: import('./checks/form-audit.js').FormAuditResult | undefined;
+  let seoHealth: import('./checks/seo-health.js').SeoHealthResult | undefined;
+  let responsive: import('./checks/responsive-breakpoints.js').ResponsiveResult | undefined;
+  let multiLanguage: import('./checks/multi-language.js').MultiLanguageResult | undefined;
 
   if (!options.skipBrowser) {
     logger.section('Browser-based Checks');
@@ -257,6 +277,28 @@ export async function runLayer1(
       formAudit = await runFormAudit(session.page, config);
       logger.info(`Forms: ${formAudit.summary.totalForms} audited, ${formAudit.summary.totalIssues} issues found`);
       checks.push(...formAudit.checkResults);
+
+      // SEO Health Check
+      logger.info('Running SEO health check...');
+      seoHealth = await runSeoHealthCheck(session.page, config);
+      logger.info(`SEO: ${seoHealth.total_issues} issues across ${seoHealth.pages_tested} pages`);
+      checks.push(...seoHealth.checkResults);
+
+      // Responsive Breakpoint Testing
+      logger.info('Running responsive breakpoint tests...');
+      responsive = await runResponsiveCheck(session.page, config);
+      logger.info(`Responsive: ${responsive.total_issues} issues across ${responsive.viewports_tested} viewports`);
+      checks.push(...responsive.checkResults);
+
+      // Multi-Language Testing
+      logger.info('Running multi-language check...');
+      multiLanguage = await runMultiLanguageCheck(session.page, config, wpHealth.plugins);
+      if (multiLanguage.is_multilingual) {
+        logger.info(`Multi-language: ${multiLanguage.plugin_detected}, ${multiLanguage.languages_found.length} languages, ${multiLanguage.total_issues} issues`);
+      } else {
+        logger.info('Multi-language: not detected (skipped)');
+      }
+      checks.push(...multiLanguage.checkResults);
     } finally {
       await session.close();
     }
@@ -282,7 +324,11 @@ export async function runLayer1(
     wpCoreHealth,
     errorLogs,
     codeReview,
-    formAudit
+    formAudit,
+    seoHealth,
+    responsive,
+    shippingTax,
+    multiLanguage
   );
 
   logger.section('Layer 2 Queue');
@@ -311,6 +357,10 @@ export async function runLayer1(
     error_logs: errorLogs,
     code_review: codeReview,
     form_audit: formAudit,
+    seo_health: seoHealth,
+    responsive,
+    shipping_tax: shippingTax,
+    multi_language: multiLanguage,
     layer2_queue: layer2Queue,
     screenshots,
     checks,
@@ -354,7 +404,11 @@ function buildLayer2Queue(
   wpCoreHealth: import('../types.js').WPCoreHealthResult | undefined,
   errorLogs: import('../types.js').ErrorLogResult | undefined,
   codeReview: CodeReviewResult | undefined,
-  formAudit: import('./checks/form-audit.js').FormAuditResult | undefined
+  formAudit: import('./checks/form-audit.js').FormAuditResult | undefined,
+  seoHealth: import('./checks/seo-health.js').SeoHealthResult | undefined,
+  responsive: import('./checks/responsive-breakpoints.js').ResponsiveResult | undefined,
+  shippingTax: import('./checks/shipping-tax.js').ShippingTaxResult | undefined,
+  multiLanguage: import('./checks/multi-language.js').MultiLanguageResult | undefined
 ): Layer2Investigation[] {
   const queue: Layer2Investigation[] = [];
 
@@ -922,6 +976,74 @@ function buildLayer2Queue(
           'Visually assess every form on the site. Check placeholder quality, CTA routing, mobile UX, trust signals, and conversion context. Follow the Form Quality Assessment protocol in Layer 2 instructions. Produce a Forms CRO Score out of 10.',
         context: formL2.data,
         pages: formL2.data.affectedPages || ['/'],
+      });
+    }
+  }
+
+  // SEO issues → seo-issues investigation
+  if (seoHealth) {
+    const seoL2 = buildSeoL2Trigger(seoHealth);
+    if (seoL2) {
+      queue.push({
+        id: seoL2.id,
+        category: 'ux',
+        priority: seoL2.priority,
+        trigger: seoL2.description,
+        instruction:
+          'Check SEO elements visually: verify page titles make sense, meta descriptions are compelling, Open Graph previews look correct (use browser dev tools), structured data is valid. Check heading hierarchy on key pages.',
+        context: seoL2.data,
+        pages: ['/'],
+      });
+    }
+  }
+
+  // Responsive issues → responsive-issues investigation
+  if (responsive) {
+    const respL2 = buildResponsiveL2Trigger(responsive);
+    if (respL2) {
+      queue.push({
+        id: respL2.id,
+        category: 'visual',
+        priority: respL2.priority,
+        trigger: respL2.description,
+        instruction:
+          'Test the flagged pages at tablet and mobile viewports. Verify overflow issues are real (not just scrollbar). Check touch targets are usable. Take screenshots at each breakpoint.',
+        context: respL2.data,
+        pages: respL2.data.affectedPages || ['/'],
+      });
+    }
+  }
+
+  // Shipping/tax issues → shipping-tax-issues investigation
+  if (shippingTax) {
+    const stL2 = buildShippingTaxL2Trigger(shippingTax);
+    if (stL2) {
+      queue.push({
+        id: stL2.id,
+        category: 'flow',
+        priority: stL2.priority,
+        trigger: stL2.description,
+        instruction:
+          'Navigate to checkout and verify shipping methods appear correctly. Test address changes to see if shipping options update. Check if tax is calculated and displayed correctly.',
+        context: stL2.data,
+        pages: ['/checkout/'],
+      });
+    }
+  }
+
+  // Multi-language issues → multi-language-issues investigation
+  if (multiLanguage) {
+    const mlL2 = buildMultiLanguageL2Trigger(multiLanguage);
+    if (mlL2) {
+      queue.push({
+        id: mlL2.id,
+        category: 'ux',
+        priority: mlL2.priority,
+        trigger: mlL2.description,
+        instruction:
+          'Test the language switcher. Switch to each available language and verify: navigation updates, content translates, forms have correct placeholders in the target language, checkout works in alternate language.',
+        context: mlL2.data,
+        pages: ['/'],
       });
     }
   }

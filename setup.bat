@@ -104,11 +104,16 @@ echo.
 echo   This is OPTIONAL but recommended. Without it, Lighthouse
 echo   checks still work but with lower rate limits.
 echo.
-echo   Get a free key at:
-echo     https://console.developers.google.com
-echo     1. Create a project (or select existing)
-echo     2. Enable "PageSpeed Insights API"
-echo     3. Create an API key under Credentials
+echo   How to get a key:
+echo     1. Go to https://console.developers.google.com
+echo     2. Create a project (or select existing)
+echo     3. Go to APIs and Services, then Library
+echo     4. Search "PageSpeed Insights API" and click ENABLE
+echo     5. Go to APIs and Services, then Credentials
+echo     6. Click "Create Credentials" then "API key"
+echo.
+echo   IMPORTANT: You MUST enable the PageSpeed Insights API (step 4).
+echo   The API key alone is NOT enough - without enabling it you get 403.
 echo.
 set /p PAGESPEED_KEY="  Paste your API key (or press Enter to skip): "
 echo.

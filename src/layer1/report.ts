@@ -4,6 +4,10 @@ import { Layer1Results } from '../types.js';
 import { fmtMs } from '../utils.js';
 import { markdownToPdf } from '../pdf.js';
 import { buildFormAuditReport } from './checks/form-audit.js';
+import { buildSeoHealthReport } from './checks/seo-health.js';
+import { buildResponsiveReport } from './checks/responsive-breakpoints.js';
+import { buildShippingTaxReport } from './checks/shipping-tax.js';
+import { buildMultiLanguageReport } from './checks/multi-language.js';
 
 function fmtBytes(bytes: number): string {
   if (bytes === 0) return '0B';
@@ -750,6 +754,26 @@ export async function generateLayer1Report(
   // ── Form Audit ──────────────────────────────────────────────────────
   if (results.form_audit) {
     w(buildFormAuditReport(results.form_audit));
+  }
+
+  // ── SEO Health ─────────────────────────────────────────────────────
+  if (results.seo_health) {
+    w(buildSeoHealthReport(results.seo_health));
+  }
+
+  // ── Responsive Breakpoints ─────────────────────────────────────────
+  if (results.responsive && results.responsive.total_issues > 0) {
+    w(buildResponsiveReport(results.responsive));
+  }
+
+  // ── Shipping & Tax ─────────────────────────────────────────────────
+  if (results.shipping_tax && results.shipping_tax.api_accessible) {
+    w(buildShippingTaxReport(results.shipping_tax));
+  }
+
+  // ── Multi-Language ─────────────────────────────────────────────────
+  if (results.multi_language && results.multi_language.is_multilingual) {
+    w(buildMultiLanguageReport(results.multi_language));
   }
 
   // ── Layer 2 Queue ────────────────────────────────────────────────────

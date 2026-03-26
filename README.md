@@ -76,6 +76,10 @@ qa-reports/my-site-2026-03-23/
 | **WP Core Health** | WP/PHP version status, debug mode, SSL, HTTPS redirect, object cache, cron |
 | **Image Audit** | Oversized images, missing dimensions, lazy loading, WebP/AVIF support |
 | **Form Audit** | Placeholder quality, contrast, required indicators, CRO routing, GDPR consent, validation feedback, mobile CTA wrapping, autocomplete, language consistency |
+| **SEO Health** | Meta titles/descriptions, Open Graph, canonical URLs, heading hierarchy, structured data, sitemap, robots.txt |
+| **Responsive** | Tests 5 viewports (mobile, tablet portrait/landscape, small/large desktop), detects overflow, touch target sizing |
+| **Shipping & Tax** | WooCommerce shipping zones/methods, tax configuration, free shipping thresholds, display consistency |
+| **Multi-Language** | WPML/Polylang/TranslatePress/Weglot detection, hreflang tags, language switcher, translation verification |
 | **Error Logs** | Fetches debug.log/error_log, groups errors by severity |
 
 ### Layer 2 — AI-Powered Browser Testing (runs via Claude Code)
@@ -203,7 +207,7 @@ wp-qa-agent/
 │   ├── layer1/
 │   │   ├── runner.ts           # Layer 1 orchestrator
 │   │   ├── report.ts           # Report generator
-│   │   └── checks/             # 14 check modules
+│   │   └── checks/             # 18 check modules
 │   ├── layer2/
 │   │   ├── instructions.md     # Layer 2 testing instructions
 │   │   ├── prompt-builder.ts   # Generates Layer 2 prompt

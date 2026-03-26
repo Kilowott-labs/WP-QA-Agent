@@ -53,16 +53,8 @@ Currently no login/registration testing. Add:
 - [ ] Detect gateway JS loading failures
 - [ ] Check gateway-specific checkout field rendering (card number, expiry)
 
-### 5. Multi-Language / Multi-Currency Testing
-**Priority:** High (for international sites) | **Effort:** High
-
-- [ ] Detect WPML / Polylang / TranslatePress plugins
-- [ ] Test language switcher works (navigates to translated page)
-- [ ] Verify translated checkout fields and labels
-- [ ] Check currency switcher (WooCommerce multi-currency)
-- [ ] Flag untranslated strings visible to users
-- [ ] Verify hreflang tags match available translations
-- [ ] Test cart persistence across language switches
+### ~~5. Multi-Language / Multi-Currency Testing~~ ✅ IMPLEMENTED (language detection + hreflang)
+*Implemented in `src/layer1/checks/multi-language.ts` — auto-detects WPML, Polylang, TranslatePress, Weglot from plugin list and DOM inspection. Checks hreflang tags on all pages, verifies language switcher presence, validates alternate language URLs return 200, detects default language. Only runs if multilingual plugin detected. Currency testing deferred to Layer 2.*
 
 ---
 
@@ -71,20 +63,8 @@ Currently no login/registration testing. Add:
 ### ~~6. Accessibility Audit (WCAG 2.1)~~ ✅ IMPLEMENTED
 *Implemented in `src/layer1/checks/accessibility.ts` — WCAG 2.1 checks for alt text, form labels, heading hierarchy, ARIA, focus indicators, touch targets, skip-to-content link.*
 
-### 7. SEO Health Check
-**Priority:** High | **Effort:** Medium
-
-- [ ] Missing/duplicate meta titles and descriptions
-- [ ] Missing Open Graph tags (og:title, og:image, og:description)
-- [ ] Twitter Card tags present
-- [ ] Structured data validation (Product schema, BreadcrumbList, Organization)
-- [ ] Canonical URL correctness (self-referencing, no duplicates)
-- [ ] XML sitemap exists, is valid, and includes key pages
-- [ ] robots.txt check (not blocking important pages)
-- [ ] Hreflang tags for multi-language sites
-- [ ] Heading structure (single H1 per page, logical hierarchy)
-- [ ] Image alt text coverage percentage
-- [ ] Internal linking analysis (orphan pages)
+### ~~7. SEO Health Check~~ ✅ IMPLEMENTED
+*Implemented in `src/layer1/checks/seo-health.ts` — per-page meta title/description validation (missing, empty, length), Open Graph tags (og:title, og:description, og:image, og:url, og:type), Twitter Card tags, canonical URL verification (missing, cross-domain mismatch), heading hierarchy (single H1, no skipped levels), JSON-LD structured data detection, hreflang tag validation (with WPML/Polylang awareness), image alt coverage percentage. Site-level: sitemap.xml/sitemap_index.xml accessibility, robots.txt validation including blocked path detection.*
 
 ### ~~8. Security Scanning~~ ✅ IMPLEMENTED + HARDENED
 *Implemented in `src/layer1/checks/security.ts` — 27 check categories following OWASP, WordPress Hardening Guide, and PCI-DSS best practices. 35+ exposed file paths (including wp-config variants, .env variants, .svn, backup files, WC logs, form data), 6 directories for listing check, OWASP security headers with HSTS quality and CSP quality evaluation, CORS misconfiguration, XML-RPC with system.multicall amplification detection, user enumeration (REST + author + oEmbed), cookie flags, login security (15+ plugin signatures), PHP execution in uploads, file editor check, default admin username, registration open, REST API namespace exposure, wp-cron.php DoS surface, jQuery CVE check, SRI on third-party scripts, cryptominer detection, suspicious script patterns, debug/database error exposure, WooCommerce-specific security (checkout HTTPS, customer/order data endpoint exposure, downloadable files), WAF/firewall detection.*
@@ -124,17 +104,8 @@ Currently no login/registration testing. Add:
 - [ ] Minimum order amount validation (if configured)
 - [ ] Cart page on mobile layout
 
-### 12. Shipping & Tax Validation
-**Priority:** Medium | **Effort:** Medium
-
-- [ ] Enter address on checkout -> verify shipping methods appear
-- [ ] Verify shipping cost calculates (not $0 unless free shipping)
-- [ ] Tax calculation visible and correct (if configured)
-- [ ] Free shipping threshold detection and verification
-- [ ] Shipping class differences for product types
-- [ ] Flat rate vs table rate vs calculated shipping
-- [ ] Local pickup option (if configured)
-- [ ] Shipping to different address toggle works
+### ~~12. Shipping & Tax Validation~~ ✅ IMPLEMENTED
+*Implemented in `src/layer1/checks/shipping-tax.ts` — fetches WooCommerce shipping zones and methods via REST API, validates tax settings (enabled, rates configured, display consistency), flags: no shipping zones, empty zones, all methods disabled, free shipping without minimum, single method across all zones, tax enabled with no rates, prices-include-tax vs display mismatch. Layer 2 trigger for checkout flow verification.*
 
 ### 13. WooCommerce REST API Comprehensive Check
 **Priority:** Medium | **Effort:** Low
@@ -162,18 +133,8 @@ Currently no login/registration testing. Add:
 - [ ] Mobile browser rendering comparison
 - [ ] Generate visual diff images
 
-### 15. Responsive Breakpoint Testing
-**Priority:** Medium | **Effort:** Low
-
-Currently tests desktop (1280) and mobile (375). Add:
-- [ ] Tablet portrait (768x1024)
-- [ ] Tablet landscape (1024x768)
-- [ ] Small desktop / laptop (1366x768)
-- [ ] Large desktop (1920x1080)
-- [ ] Verify navigation behavior at each breakpoint (hamburger menu trigger point)
-- [ ] Check for horizontal scroll at any breakpoint
-- [ ] Verify touch-friendly spacing on tablet sizes
-- [ ] Test checkout form usability at tablet size
+### ~~15. Responsive Breakpoint Testing~~ ✅ IMPLEMENTED
+*Implemented in `src/layer1/checks/responsive-breakpoints.ts` — tests 5 viewports (mobile 375x812, tablet portrait 768x1024, tablet landscape 1024x768, small desktop 1366x768, large desktop 1920x1080). Checks horizontal overflow (scrollWidth vs clientWidth), element overflow detection (bounding rect beyond viewport), touch target sizing on mobile/tablet viewports (44x44px minimum). Issues grouped by viewport with severity.*
 
 ### 16. Cookie Consent & GDPR Compliance
 **Priority:** Medium (critical for EU sites) | **Effort:** Medium
@@ -299,21 +260,21 @@ Currently tests desktop (1280) and mobile (375). Add:
 | 18 | SSL & Certificate Check | Medium | Low | 6th |
 | ~~20~~ | ~~Image Optimization Audit~~ | ~~Medium~~ | ~~Low~~ | ✅ Done |
 | 17 | 404 Page Testing | Medium | Low | 8th |
-| 7 | SEO Health Check | High | Medium | 9th |
+| ~~7~~ | ~~SEO Health Check~~ | ~~High~~ | ~~Medium~~ | ✅ Done |
 | ~~9~~ | ~~Performance Deep-Dive~~ | ~~High~~ | ~~Medium~~ | ✅ Done |
 | 1 | Auth Flow Testing | High | Medium | 11th |
 | 11 | Cart Behavior Testing | Medium | Medium | 12th |
 | 4 | Payment Gateway Validation | High | Medium | 13th |
-| 15 | Responsive Breakpoints | Medium | Low | 14th |
+| ~~15~~ | ~~Responsive Breakpoints~~ | ~~Medium~~ | ~~Low~~ | ✅ Done |
 | 16 | Cookie/GDPR Compliance | Medium | Medium | 15th |
-| 12 | Shipping & Tax Validation | Medium | Medium | 16th |
+| ~~12~~ | ~~Shipping & Tax Validation~~ | ~~Medium~~ | ~~Medium~~ | ✅ Done |
 | 24 | Parallel Execution | Medium | Medium | 17th |
 | 25 | CI/CD Integration | Medium | Medium | 18th |
 | 13 | WC REST API Comprehensive | Medium | Low | 19th |
 | ~~19~~ | ~~WordPress Core Health~~ | ~~Medium~~ | ~~Low~~ | ✅ Done |
 | 22 | Cron & Task Health | Low | Low | 21st |
 | 2 | Email Verification | High | Medium | 22nd |
-| 5 | Multi-Language Testing | High | High | 23rd |
+| ~~5~~ | ~~Multi-Language Testing~~ | ~~High~~ | ~~High~~ | ✅ Done |
 | ~~21~~ | ~~Form Validation Testing~~ → Form Quality + CRO Audit | ~~Low~~ → **High** | ~~Medium~~ → **Low** | ✅ Done |
 | 14 | Cross-Browser Comparison | Medium | Medium | 25th |
 | 26 | Test Suite | Medium | High | 26th |

@@ -588,6 +588,10 @@ export interface Layer1Results {
   error_logs?: ErrorLogResult;
   code_review?: CodeReviewResult;
   form_audit?: import('./layer1/checks/form-audit.js').FormAuditResult;
+  seo_health?: import('./layer1/checks/seo-health.js').SeoHealthResult;
+  responsive?: import('./layer1/checks/responsive-breakpoints.js').ResponsiveResult;
+  shipping_tax?: import('./layer1/checks/shipping-tax.js').ShippingTaxResult;
+  multi_language?: import('./layer1/checks/multi-language.js').MultiLanguageResult;
 
   layer2_queue: Layer2Investigation[];
   screenshots: string[];
