@@ -3,6 +3,7 @@ import path from 'path';
 import { Layer1Results, Issue } from '../types.js';
 import { readJson, fmtMs, logger } from '../utils.js';
 import { markdownToPdf } from '../pdf.js';
+import { buildFormAuditReport } from '../layer1/checks/form-audit.js';
 
 interface Layer2Findings {
   tested_at: string;
@@ -201,6 +202,11 @@ export async function mergeReports(reportDir: string): Promise<string> {
       }
       w('');
     }
+  }
+
+  // ── Form Audit (from L1) ────────────────────────────────────────────
+  if (l1.form_audit && l1.form_audit.summary.totalIssues > 0) {
+    w(buildFormAuditReport(l1.form_audit));
   }
 
   // ── Passed Checks ───────────────────────────────────────────────────
