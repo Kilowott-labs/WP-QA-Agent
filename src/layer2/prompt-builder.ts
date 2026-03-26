@@ -363,3 +363,112 @@ export async function buildLayer2Prompt(
 
   return lines.join('\n');
 }
+
+/**
+ * Generate per-agent context files for the subagent-based QA flow.
+ * Each file contains ONLY the context relevant to that specialist agent,
+ * keeping their input tokens small.
+ */
+export async function buildAgentContextFiles(
+  results: Layer1Results,
+  outputDir: string
+): Promise<Record<string, string>> {
+  const contexts: Record<string, string> = {};
+  const site = results.site;
+  const siteHeader = `Site: ${site.name}\nURL: ${site.url}\n`;
+  const screenshotDir = path.join(outputDir, 'screenshots');
+  const knownIssues = site.known_issues?.length
+    ? `\nKnown issues (skip these): ${site.known_issues.join('; ')}\n`
+    : '';
+
+  // ── Checkout flow context ───────────────────────────────────────────
+  const checkoutLines: string[] = [siteHeader, knownIssues];
+  checkoutLines.push(`WooCommerce: ${results.wordpress_health.woocommerce_detected ? `v${results.wordpress_health.wc_version}` : 'not detected'}`);
+  const checkoutCN = results.console_network.find(cn => cn.page_url?.includes('checkout'));
+  if (checkoutCN?.wc_js_state) {
+    const s = checkoutCN.wc_js_state;
+    checkoutLines.push(`\nCheckout JS state: checkout_params=${s.wc_checkout_params_loaded}, cart_params=${s.wc_cart_params_loaded}, stripe=${s.stripe_loaded ?? 'n/a'}, paypal=${s.paypal_loaded ?? 'n/a'}, errors_visible=${s.wc_errors_visible}`);
+  }
+  if (results.code_analysis?.checkout_field_details) {
+    const fields = results.code_analysis.checkout_field_details
+      .flatMap(d => d.fields)
+      .map(f => `"${f.label}" (${f.type}${f.required ? ', required' : ''})`)
+      .join(', ');
+    if (fields) checkoutLines.push(`\nCustom checkout fields: ${fields}`);
+  }
+  checkoutLines.push(`\nScreenshot dir: ${screenshotDir}`);
+  contexts['checkout'] = checkoutLines.join('\n');
+
+  // ── Visual assessment context ───────────────────────────────────────
+  const visualLines: string[] = [siteHeader, knownIssues];
+  const failedPages = results.page_health.filter(p => !p.ok);
+  if (failedPages.length > 0) {
+    visualLines.push(`\nFailed pages: ${failedPages.map(p => `${p.page} (${p.status})`).join(', ')}`);
+  }
+  const keyPages = site.key_pages?.map(p => p.path).join(', ') || '/';
+  visualLines.push(`\nKey pages to visit: ${keyPages}`);
+  visualLines.push(`\nScreenshot dir: ${screenshotDir}`);
+  contexts['visual'] = visualLines.join('\n');
+
+  // ── Forms context ──────────────────────────────────────────────────
+  const formLines: string[] = [siteHeader, knownIssues];
+  if (results.form_audit) {
+    const fa = results.form_audit;
+    formLines.push(`\nLayer 1 form audit found ${fa.summary.totalIssues} issues across ${fa.summary.totalForms} forms on ${fa.summary.pagesWithForms} pages.`);
+    formLines.push(`Issues by type: ${Object.entries(fa.summary.byCode).map(([k,v]) => `${k}=${v}`).join(', ')}`);
+    if (fa.summary.croRiskPages.length > 0) {
+      formLines.push(`CRO risk pages: ${fa.summary.croRiskPages.join(', ')}`);
+    }
+    // List pages with forms
+    const formPages = [...new Set(fa.forms.map(f => f.pageUrl))];
+    formLines.push(`\nPages with forms: ${formPages.join(', ')}`);
+  }
+  formLines.push(`\nScreenshot dir: ${screenshotDir}`);
+  contexts['forms'] = formLines.join('\n');
+
+  // ── Mobile context ─────────────────────────────────────────────────
+  const mobileLines: string[] = [siteHeader, knownIssues];
+  mobileLines.push(`\nKey pages to test: ${keyPages}`);
+  if (results.responsive && results.responsive.total_issues > 0) {
+    mobileLines.push(`\nLayer 1 responsive check found ${results.responsive.total_issues} issues.`);
+    const byVp = results.responsive.summary.by_viewport;
+    for (const [vp, count] of Object.entries(byVp)) {
+      if (count > 0) mobileLines.push(`  ${vp}: ${count} issues`);
+    }
+  }
+  if (results.lighthouse) {
+    mobileLines.push(`\nLighthouse mobile performance: ${results.lighthouse.mobile.performance}/100`);
+  }
+  mobileLines.push(`\nScreenshot dir: ${screenshotDir}`);
+  contexts['mobile'] = mobileLines.join('\n');
+
+  // ── Code features context ──────────────────────────────────────────
+  if (results.code_analysis) {
+    const ca = results.code_analysis;
+    const featureLines: string[] = [siteHeader, knownIssues];
+    if (ca.feature_map?.length > 0) {
+      featureLines.push(`\n${ca.feature_map.length} custom features to verify:\n`);
+      for (const f of ca.feature_map) {
+        featureLines.push(`- ${f.name} (${f.type}): ${f.description}`);
+        featureLines.push(`  Pages: ${f.pages.join(', ')}`);
+        featureLines.push(`  Test: ${f.how_to_test}`);
+      }
+    }
+    if (ca.template_overrides.length > 0) {
+      featureLines.push(`\nWC template overrides: ${ca.template_overrides.join(', ')}`);
+    }
+    if (ca.rest_endpoints?.length > 0) {
+      featureLines.push(`\nREST endpoints: ${ca.rest_endpoints.map(e => `${e.methods} /wp-json/${e.namespace}${e.route}`).join(', ')}`);
+    }
+    featureLines.push(`\nScreenshot dir: ${screenshotDir}`);
+    contexts['code-features'] = featureLines.join('\n');
+  }
+
+  // ── Write context files to disk ────────────────────────────────────
+  for (const [name, content] of Object.entries(contexts)) {
+    const filePath = path.join(outputDir, `agent-context-${name}.md`);
+    await fs.writeFile(filePath, content, 'utf-8');
+  }
+
+  return contexts;
+}

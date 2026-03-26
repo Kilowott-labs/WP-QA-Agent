@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { loadConfig, configFromCLI } from './config.js';
 import { runLayer1 } from './layer1/runner.js';
 import { generateLayer1Report } from './layer1/report.js';
-import { buildLayer2Prompt } from './layer2/prompt-builder.js';
+import { buildLayer2Prompt, buildAgentContextFiles } from './layer2/prompt-builder.js';
 import { mergeReports } from './layer2/report-merger.js';
 import { runPluginUpdates } from './updates/runner.js';
 import { checkForUpdates } from './updates/check-updates.js';
@@ -59,6 +59,9 @@ program
     const prompt = await buildLayer2Prompt(results, outputDir);
     const promptPath = path.join(outputDir, 'layer2-prompt.md');
     await fs.writeFile(promptPath, prompt, 'utf-8');
+
+    // Generate per-agent context files (for subagent-based flow)
+    await buildAgentContextFiles(results, outputDir);
 
     // Print what was produced
     logger.info('');
